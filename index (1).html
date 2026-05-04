@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition System</title>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .hero {
+            text-align: center;
+            margin: 40px 0;
+            animation: fadeInDown 1s ease;
+        }
+
+        .hero h1 {
+            color: white;
+            font-size: 3rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 20px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .hero p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            max-width: 500px;
+            width: 100%;
+            animation: fadeInUp 1s ease;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+        }
+
+        .file-input-label:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+        }
+
+        .preview-area {
+            margin: 20px 0;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-area img, .preview-area video {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+        }
+
+        .preview-placeholder {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        .loader.active {
+            display: block;
+        }
+
+        .result-card {
+            display: none;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            animation: fadeInUp 0.8s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .result-card.show {
+            display: block;
+        }
+
+        .result-card h3 {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.6rem;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .detail-value {
+            font-weight: 500;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.error {
+            background: rgba(255, 59, 48, 0.2);
+            color: white;
+        }
+
+        .message.success {
+            background: rgba(52, 199, 89, 0.2);
+            color: white;
+        }
+
+        .training-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .training-section h4 {
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .training-inputs {
+            display: grid;
+            gap: 10px;
+        }
+
+        .training-inputs input {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .card {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>🔍 Face Recognition System</h1>
+        <p>Upload or capture image to identify person</p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card">
+        <h2>Upload or Capture Image</h2>
+        
+        <div class="file-input-wrapper">
+            <input type="file" id="imageInput" accept="image/*">
+            <label for="imageInput" class="file-input-label">
+                📁 Choose Image from Gallery
+            </label>
+        </div>
+
+        <button class="btn btn-secondary" id="cameraBtn">
+            📷 Open Camera
+        </button>
+
+        <div class="preview-area" id="previewArea">
+            <p class="preview-placeholder">No image selected</p>
+        </div>
+
+        <button class="btn" id="submitBtn" disabled>
+            🔍 Identify Person
+        </button>
+
+        <div class="loader" id="loader"></div>
+        <div class="message" id="message"></div>
+
+        <!-- Training Section -->
+        <div class="training-section">
+            <h4>👤 Register New Person</h4>
+            <div class="training-inputs">
+                <input type="text" id="trainName" placeholder="Enter Name">
+                <input type="number" id="trainAge" placeholder="Enter Age">
+                <input type="text" id="trainAddress" placeholder="Enter Address">
+                <input type="text" id="trainContact" placeholder="Enter Contact">
+                <input type="text" id="trainOccupation" placeholder="Enter Profession">
+            </div>
+            <button class="btn" id="trainBtn" style="margin-top: 15px;" disabled>
+                ✅ Register This Person
+            </button>
+        </div>
+    </div>
+
+    <!-- Result Card -->
+    <div class="result-card" id="resultCard">
+        <h3>✅ Person Identified</h3>
+        <div id="resultDetails"></div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+    <video id="video" autoplay style="display: none;"></video>
+
+    <script>
+        // Database simulation (localStorage mein store karenge)
+        const DB_KEY = 'face_recognition_db';
+        
+        // DOM Elements
+        const imageInput = document.getElementById('imageInput');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const previewArea = document.getElementById('previewArea');
+        const submitBtn = document.getElementById('submitBtn');
+        const trainBtn = document.getElementById('trainBtn');
+        const loader = document.getElementById('loader');
+        const message = document.getElementById('message');
+        const resultCard = document.getElementById('resultCard');
+        const resultDetails = document.getElementById('resultDetails');
+        const canvas = document.getElementById('canvas');
+        const video = document.getElementById('video');
+
+        let currentImage = null;
+        let currentDescriptor = null;
+        let modelsLoaded = false;
+        let stream = null;
+
+        // Load Face-API models
+        async function loadModels() {
+            if (modelsLoaded) return;
+            
+            showMessage('Loading AI models...', 'success');
+            
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model');
+                
+                modelsLoaded = true;
+                showMessage('✅ AI Models loaded successfully!', 'success');
+                setTimeout(() => hideMessage(), 2000);
+            } catch (error) {
+                showMessage('❌ Failed to load AI models', 'error');
+                console.error(error);
+            }
+        }
+
+        // Initialize on page load
+        loadModels();
+
+        // Handle file selection
+        imageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    await displayImage(event.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Camera functionality
+        cameraBtn.addEventListener('click', async () => {
+            try {
+                if (stream) {
+                    stopCamera();
+                    return;
+                }
+
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' } 
+                });
+                
+                video.srcObject = stream;
+                video.style.display = 'block';
+                previewArea.innerHTML = '';
+                previewArea.appendChild(video);
+                
+                cameraBtn.textContent = '📸 Capture Photo';
+                cameraBtn.onclick = capturePhoto;
+                
+            } catch (error) {
+                showMessage('❌ Camera access denied', 'error');
+            }
+        });
+
+        function capturePhoto() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            const imageDataUrl = canvas.toDataURL('image/jpeg');
+            stopCamera();
+            displayImage(imageDataUrl);
+            
+            cameraBtn.textContent = '📷 Open Camera';
+            cameraBtn.onclick = () => cameraBtn.click();
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.style.display = 'none';
+            }
+        }
+
+        async function displayImage(src) {
+            currentImage = src;
+            previewArea.innerHTML = `<img src="${src}" alt="Preview">`;
+            submitBtn.disabled = false;
+            trainBtn.disabled = false;
+            resultCard.classList.remove('show');
+            hideMessage();
+            
+            // Detect face immediately
+            await detectFace();
+        }
+
+        async function detectFace() {
+            if (!modelsLoaded) {
+                await loadModels();
+            }
+
+            loader.classList.add('active');
+            showMessage('Detecting face...', 'success');
+
+            try {
+                const img = await faceapi.fetchImage(currentImage);
+                const detection = await faceapi
+                    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+
+                if (!detection) {
+                    showMessage('❌ No face detected in image', 'error');
+                    currentDescriptor = null;
+                    return false;
+                }
+
+                currentDescriptor = detection.descriptor;
+                showMessage('✅ Face detected successfully!', 'success');
+                setTimeout(() => hideMessage(), 2000);
+                return true;
+
+            } catch (error) {
+                showMessage('❌ Error detecting face', 'error');
+                console.error(error);
+                return false;
+            } finally {
+                loader.classList.remove('active');
+            }
+        }
+
+        // Identify person
+        submitBtn.addEventListener('click', async () => {
+            if (!currentDescriptor) {
+                const detected = await detectFace();
+                if (!detected) return;
+            }
+
+            loader.classList.add('active');
+            showMessage('Searching database...', 'success');
+
+            try {
+                const db = getDatabase();
+                
+                if (db.length === 0) {
+                    showMessage('❌ No persons in database. Please register someone first.', 'error');
+                    loader.classList.remove('active');
+                    return;
+                }
+
+                let bestMatch = null;
+                let minDistance = Infinity;
+
+                for (const person of db) {
+                    const distance = faceapi.euclideanDistance(currentDescriptor, person.descriptor);
+                    
+                    if (distance < minDistance && distance < 0.6) {
+                        minDistance = distance;
+                        bestMatch = person;
+                    }
+                }
+
+                loader.classList.remove('active');
+
+                if (bestMatch) {
+                    displayResult(bestMatch, minDistance);
+                } else {
+                    showMessage('❌ No matching person found in database', 'error');
+                }
+
+            } catch (error) {
+                loader.classList.remove('active');
+                showMessage('❌ Error during identification', 'error');
+                console.error(error);
+            }
+        });
+
+        // Register new person
+        trainBtn.addEventListener('click', async () => {
+            const name = document.getElementById('trainName').value.trim();
+            const age = document.getElementById('trainAge').value.trim();
+            const address = document.getElementById('trainAddress').value.trim();
+            const contact = document.getElementById('trainContact').value.trim();
+            const occupation = document.getElementById('trainOccupation').value.trim();
+
+            if (!name || !age || !address || !contact || !occupation) {
+                showMessage('❌ Please fill all fields', 'error');
+                return;
+            }
+
+            if (!currentDescriptor) {
+                const detected = await detectFace();
+                if (!detected) return;
+            }
+
+            loader.classList.add('active');
+            showMessage('Registering person...', 'success');
+
+            try {
+                const person = {
+                    name,
+                    age: parseInt(age),
+                    address,
+                    contact,
+                    occupation,
+                    descriptor: Array.from(currentDescriptor),
+                    image: currentImage,
+                    registeredAt: new Date().toISOString()
+                };
+
+                const db = getDatabase();
+                db.push(person);
+                saveDatabase(db);
+
+                loader.classList.remove('active');
+                showMessage(`✅ ${name} registered successfully!`, 'success');
+
+                // Clear form
+                document.getElementById('trainName').value = '';
+                document.getElementById('trainAge').value = '';
+                document.getElementById('trainAddress').value = '';
+                document.getElementById('trainContact').value = '';
+                document.getElementById('trainOccupation').value = '';
+
+            } catch (error) {
+                loader.classList.remove('active');
+                showMessage('❌ Error registering person', 'error');
+                console.error(error);
+            }
+        });
+
+        function displayResult(person, distance) {
+            const confidence = ((1 - distance) * 100).toFixed(2);
+            
+            resultDetails.innerHTML = `
+                <div class="detail-item">
+                    <span class="detail-label">Name:</span>
+                    <span class="detail-value">${person.name}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Age:</span>
+                    <span class="detail-value">${person.age}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Address:</span>
+                    <span class="detail-value">${person.address}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Contact:</span>
+                    <span class="detail-value">${person.contact}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Profession:</span>
+                    <span class="detail-value">${person.occupation}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Confidence:</span>
+                    <span class="detail-value">${confidence}%</span>
+                </div>
+            `;
+
+            resultCard.classList.add('show');
+            showMessage('✅ Person identified successfully!', 'success');
+        }
+
+        // Database functions (localStorage)
+        function getDatabase() {
+            const data = localStorage.getItem(DB_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveDatabase(db) {
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+        }
+
+        // Message functions
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = `message ${type} show`;
+        }
+
+        function hideMessage() {
+            message.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
